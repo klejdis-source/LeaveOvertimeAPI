@@ -1,0 +1,7 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs
+/LeaveOvertimeAPI/bin/Debug/net9.0
+/LeaveOvertimeAPI/obj
