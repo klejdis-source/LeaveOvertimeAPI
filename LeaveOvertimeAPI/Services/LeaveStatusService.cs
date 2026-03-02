@@ -54,7 +54,7 @@ namespace LeaveOvertimeAPI.Services
                     _logger.LogError($"Gabim gjatë ekzekutimit të shërbimit: {ex.Message}");
                 }
 
-                // Shërbimi pret 24 orë për të bërë kontrollin e radhës (ose sa ta caktosh ti)
+                // Shërbimi pret 24 orë për të bërë kontrollin e radhës 
                 await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
             }
         }

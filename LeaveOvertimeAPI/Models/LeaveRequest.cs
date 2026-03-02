@@ -6,7 +6,7 @@ namespace LeaveOvertimeAPI.Models
     {
         //te detyrueshme id ,reason, type, status 
         public Guid? Id { get; set; }
-        public Guid EmployeeId { get; set; }
+        public int EmployeeId { get; set; }
         public string? Type { get; set; } // Vacation , sick , unpaid
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
