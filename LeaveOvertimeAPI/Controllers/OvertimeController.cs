@@ -23,11 +23,11 @@ namespace LeaveOvertimeAPI.Controllers
             [FromQuery] string? status = null,
             [FromQuery] DateTime? from = null,
             [FromQuery] DateTime? to = null,
-            [FromQuery] int? employeeId = null,
+            [FromQuery] Guid? employeeId = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
-            var currentId = int.Parse(User.FindFirstValue("employeeId")!);
+            var currentId = Guid.Parse(User.FindFirstValue("employeeId")!);
             var currentRole = User.FindFirstValue(ClaimTypes.Role);
             var query = _db.Overtimes
                 .Include(o => o.Employee)
@@ -77,14 +77,14 @@ namespace LeaveOvertimeAPI.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var currentId = int.Parse(User.FindFirstValue("employeeId")!);
+            var currentId = Guid.Parse(User.FindFirstValue("employeeId")!);
             var currentRole = User.FindFirstValue(ClaimTypes.Role);
             var overtime = await _db.Overtimes
                 .Include(o => o.Employee)
                 .FirstOrDefaultAsync(o => o.Id == id);
             if (overtime == null)
                 return NotFound(new { message = "Regjistrimi nuk u gjet." });
-            if (currentRole == "Employee" && overtime.EmployeeId != currentId)
+            if (currentRole == "Employee" && overtime.EmployeeId == currentId)
                 return Forbid();
             return Ok(overtime);
         }
@@ -92,7 +92,7 @@ namespace LeaveOvertimeAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] OvertimeCreateDto dto)
         {
-            var currentId = int.Parse(User.FindFirstValue("employeeId")!);
+            var currentId = Guid.Parse(User.FindFirstValue("employeeId")!);
             // Rregull biznesi: maksimumi 12 orë shtesë në ditë
             if (dto.HoursWorked > 12)
                 return BadRequest(new { message = "Maksimumi i orëve shtesë në ditë është 12." });
@@ -120,6 +120,46 @@ namespace LeaveOvertimeAPI.Controllers
             return CreatedAtAction(nameof(GetById), new { id = overtime.Id }, overtime);
         }
 
+        //Put: api/overtime/{id}/approve
+        [HttpPut("{id}/approve")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> ApprovedOrReject(Guid id, [FromBody] ApproveRejectDto dto)
+        {
+            var currentId = Guid.Parse(User.FindFirstValue("employeeId")!);
+
+            var overtime = await _db.Overtimes.FindAsync(id);
+
+            if (overtime == null)
+                return NotFound(new { message = "Regjistrimi nuk u gjet." });
+            if (overtime.Status == "Approved")
+                return BadRequest(new { message = "Oret e aprovuara nuk mund te modifikohen." });
+
+            overtime.Status = dto.Approve ? "Approved" : "Rejected";
+            overtime.ApprovedBy = Guid.Parse(currentId.ToString());
+
+            await _db.SaveChangesAsync();
+            return Ok(overtime);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var currentId = Guid.Parse(User.FindFirstValue("employeeId")!);
+
+            var overtime = await _db.Overtimes.FindAsync(id);
+
+            if (overtime == null)
+                return NotFound(new { message = "Regjistrimi nuk u gjet," });
+            if (overtime.EmployeeId != currentId)
+                return Forbid();
+            if (overtime.Status != "Pending")
+                return BadRequest(new { message = "Vetem regjistrimet Pending mund te fshihen." });
+
+                    _db.Overtimes.Remove(overtime);
+            await _db.SaveChangesAsync();
+            return NoContent();
+
+        }
     }
 }
      

@@ -16,6 +16,6 @@
             public DateTime HireDate { get; set; }
             
             public Roles? Role { get; set; }
-            public int? ManagerId { get; set; }
+            public Guid? ManagerId { get; set; }
     }
 }

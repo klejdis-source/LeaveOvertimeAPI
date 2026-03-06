@@ -31,6 +31,7 @@ namespace LeaveOvertimeAPI.Controllers
 
             var employee = new Employee
             {
+                Id = Guid.NewGuid(),
                 FirstName = dto.FirstName,
                 LastName = dto.LastName,
                 Email = dto.Email,
@@ -41,12 +42,10 @@ namespace LeaveOvertimeAPI.Controllers
             _context.Employees.Add(employee);
             await _context.SaveChangesAsync();
 
-            var token = GenerateJwtToken(employee);
-
             return Ok(new
             {
-                Token = token,
-                User = new { employee.FirstName, employee.LastName, employee.Roles }
+                message = "Përdoruesi u krijua me sukses.",
+                user = new { employee.FirstName, employee.LastName, employee.Email, employee.Roles }
             });
         }
 
@@ -77,6 +76,7 @@ namespace LeaveOvertimeAPI.Controllers
             {
                 Subject = new ClaimsIdentity(new[]
                 {
+                    new Claim("employeeId",              employee.Id.ToString()),
                     new Claim(ClaimTypes.NameIdentifier, employee.Id.ToString()),
                     new Claim(ClaimTypes.Email,          employee.Email),
                     new Claim(ClaimTypes.Role,           employee.Roles.ToString())

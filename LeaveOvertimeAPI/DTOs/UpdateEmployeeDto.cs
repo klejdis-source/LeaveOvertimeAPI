@@ -8,7 +8,7 @@
         public decimal? Salary { get; set; }
         public EmployeeStatus? Status { get; set; }
         public Roles? Roles { get; set; }
-        public int? ManagerId { get; set; }
+        public Guid? ManagerId { get; set; }
 
 
     }

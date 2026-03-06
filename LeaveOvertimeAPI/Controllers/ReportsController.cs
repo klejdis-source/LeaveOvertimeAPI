@@ -35,54 +35,61 @@ public class ReportsController : ControllerBase
         if (from.HasValue) query = query.Where(l => l.StartDate >= from.Value);
         if (to.HasValue) query = query.Where(l => l.EndDate <= to.Value);
 
-        var result = await query
+        var grouped = await query
             .GroupBy(l => new { l.EmployeeId, l.Employee.FirstName, l.Employee.LastName })
-            .Select(g => new LeaveSummaryDto(
-                g.Key.EmployeeId,
-                $"{g.Key.FirstName} {g.Key.LastName}",
-                g.Where(l => l.Type == "Vacation").Sum(l => l.TotalDays),
-                g.Where(l => l.Type == "Sick").Sum(l => l.TotalDays),
-                g.Where(l => l.Type == "Unpaid").Sum(l => l.TotalDays)
-            ))
             .ToListAsync();
+
+        var result = grouped.Select(g => new LeaveSummaryDto
+        {
+            EmployeeId = g.Key.EmployeeId,
+            EmployeeName = $"{g.Key.FirstName} {g.Key.LastName}",
+            TotalVacationDays = g.Where(l => l.Type == "Vacation").Sum(l => l.TotalDays),
+            TotalSickDays = g.Where(l => l.Type == "Sick").Sum(l => l.TotalDays),
+            TotalUnpaidDays = g.Where(l => l.Type == "Unpaid").Sum(l => l.TotalDays)
+        }).ToList();
 
         return Ok(result);
     }
 
-    // Total orë shtesë të aprovuara, me filtrim sipas muajit dhe vitit.
+    // Total orë shtesë të aprovuara - automatikisht muaji dhe viti aktual.
     [HttpGet("overtime-summary")]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<OvertimeSummaryDto>>> GetOvertimeSummary(
         [FromQuery] int? month = null,
         [FromQuery] int? year = null)
     {
-        var query = _db.Overtimes
+        // Nëse nuk jepet muaji/viti, merr automatikisht muajin dhe vitin aktual
+        var targetMonth = month ?? DateTime.UtcNow.Month;
+        var targetYear = year ?? DateTime.UtcNow.Year;
+
+        var grouped = await _db.Overtimes
             .Include(o => o.Employee)
-            .Where(o => o.Status == "Approved")
-            .AsQueryable();
-
-        if (month.HasValue) query = query.Where(o => o.Date.Month == month.Value);
-        if (year.HasValue) query = query.Where(o => o.Date.Year == year.Value);
-
-        var result = await query
+            .Where(o => o.Status == "Approved" &&
+                        o.Date.Month == targetMonth &&
+                        o.Date.Year == targetYear)
             .GroupBy(o => new
             {
                 o.EmployeeId,
                 o.Employee.FirstName,
-                o.Employee.LastName,
-                o.Date.Month,
-                o.Date.Year
+                o.Employee.LastName
             })
-            .Select(g => new OvertimeSummaryDto(
-                g.Key.EmployeeId,
-                $"{g.Key.FirstName} {g.Key.LastName}",
-                g.Key.Month,
-                g.Key.Year,
-                (double)g.Sum(o => o.HoursWorked)
-            ))
             .ToListAsync();
 
-        return Ok(result);
+        var result = grouped.Select(g => new OvertimeSummaryDto
+        {
+            EmployeeId = g.Key.EmployeeId,
+            EmployeeName = $"{g.Key.FirstName} {g.Key.LastName}",
+            Month = targetMonth,
+            Year = targetYear,
+            TotalHours = (double)g.Sum(o => o.HoursWorked)
+        }).ToList();
+
+        return Ok(new
+        {
+            Month = targetMonth,
+            Year = targetYear,
+            Summary = result
+        });
     }
 
     // Lista e të gjitha kërkesave Pending (leje + orë shtesë).
@@ -131,7 +138,7 @@ public class ReportsController : ControllerBase
         [FromQuery] int? month = null,
         [FromQuery] int? year = null)
     {
-        var currentId = int.Parse(User.FindFirstValue("employeeId")!);
+        var currentId = Guid.Parse(User.FindFirstValue("employeeId")!);
 
         var subordinateIds = await _db.Employees
             .Where(e => e.ManagerId == currentId)

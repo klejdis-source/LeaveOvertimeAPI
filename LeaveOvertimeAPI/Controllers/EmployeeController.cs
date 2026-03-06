@@ -53,7 +53,7 @@ public class EmployeesController : ControllerBase
 
     /// Merr punonjësin sipas ID
     [HttpGet("{id}")]
-    public async Task<ActionResult<EmployeeResponseDto>> GetById(int id)
+    public async Task<ActionResult<EmployeeResponseDto>> GetById(Guid id)
     {
         var currentId = GetCurrentEmployeeId();
         var currentRole = GetCurrentRole();
@@ -97,7 +97,7 @@ public class EmployeesController : ControllerBase
     /// Përditëso punonjësin (Admin)
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<EmployeeResponseDto>> Update(int id, [FromBody] UpdateEmployeeDto dto)
+    public async Task<ActionResult<EmployeeResponseDto>> Update(Guid id, [FromBody] UpdateEmployeeDto dto)
     {
         var employee = await _db.Employees.FindAsync(id);
         if (employee is null) return NotFound(new { message = "Punonjësi nuk u gjet." });
@@ -117,7 +117,7 @@ public class EmployeesController : ControllerBase
     /// Deaktivizo punonjësin 
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Deactivate(int id)
+    public async Task<IActionResult> Deactivate(Guid id)
     {
         var employee = await _db.Employees.FindAsync(id);
         if (employee is null) return NotFound(new { message = "Punonjësi nuk u gjet." });
@@ -128,8 +128,8 @@ public class EmployeesController : ControllerBase
         return NoContent();
     }
 
-    private int GetCurrentEmployeeId() =>
-        int.Parse(User.FindFirstValue("employeeId")!);
+    private Guid GetCurrentEmployeeId() =>
+        Guid.Parse(User.FindFirstValue("employeeId")!);
 
     private string GetCurrentRole() =>
         User.FindFirstValue(ClaimTypes.Role)!;
@@ -143,8 +143,8 @@ public class EmployeesController : ControllerBase
         Position = e.Position,
         Salary = e.Salary,
         HireDate = e.HireDate,
-        Status = e.Status,   
-        Role = e.Roles,      
+        Status = e.Status,
+        Role = e.Roles,
         ManagerId = e.ManagerId
     };
 }

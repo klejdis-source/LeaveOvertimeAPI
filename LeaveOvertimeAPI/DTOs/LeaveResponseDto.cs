@@ -2,8 +2,8 @@
 {
     public class LeaveResponseDto
     {
-    public int Id { get; set; }
-    public int EmployeeId { get; set; }
+    public Guid Id { get; set; }
+    public Guid EmployeeId { get; set; }
     public string? EmployeeName { get; set; }
     public string? Type { get; set; }
     public DateTime StartDate { get; set; }
@@ -13,6 +13,7 @@
     public int TotalDays { get; set; }
     public string? ApprovedByName { get; set; }
     public DateTime CreatedAt { get; set; }
+    public int DaysOfLeave { get; set; }
 
     }
 }

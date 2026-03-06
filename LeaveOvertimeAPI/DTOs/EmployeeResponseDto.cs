@@ -5,7 +5,7 @@ namespace LeaveOvertimeAPI.DTOs
 {
     public class EmployeeResponseDto
     {
-        public int? Id { get; set; }  
+        public Guid? Id { get; set; }  
 
         public string? FirstName { get; set; }
 
@@ -23,6 +23,6 @@ namespace LeaveOvertimeAPI.DTOs
 
         public Roles? Role { get; set; } 
 
-        public int? ManagerId { get; set; } 
+        public Guid? ManagerId { get; set; } 
     }
 }
