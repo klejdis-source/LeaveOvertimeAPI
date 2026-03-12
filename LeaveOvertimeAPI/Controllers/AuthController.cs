@@ -44,7 +44,7 @@ namespace LeaveOvertimeAPI.Controllers
 
             return Ok(new
             {
-                message = "Përdoruesi u krijua me sukses.",
+                message = "Përdoruesi u regjistrua me sukses.",
                 user = new { employee.FirstName, employee.LastName, employee.Email, employee.Roles }
             });
         }

@@ -1,11 +1,10 @@
-﻿using LeaveOvertimeAPI.Models;
-using LeaveOvertimeAPI.Data;
+﻿using LeaveOvertimeAPI.Data;
 using LeaveOvertimeAPI.DTOs;
 using LeaveOvertimeAPI.Models;
+using LeaveOvertimeAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Data;
 using System.Security.Claims;
 
 namespace LeaveOvertimeAPI.Controllers;
@@ -22,7 +21,6 @@ public class EmployeesController : ControllerBase
         _db = db;
     }
 
-    /// Merr listën e punonjësve 
     [HttpGet]
     [Authorize(Roles = "Admin,Manager")]
     public async Task<ActionResult<PagedResult<EmployeeResponseDto>>> GetAll(
@@ -33,11 +31,8 @@ public class EmployeesController : ControllerBase
     {
         var query = _db.Employees.AsQueryable();
 
-        if (status.HasValue)
-            query = query.Where(e => e.Status == status.Value);
-
-        if (role.HasValue)
-            query = query.Where(e => e.Roles == role.Value);
+        if (status.HasValue) query = query.Where(e => e.Status == status.Value);
+        if (role.HasValue) query = query.Where(e => e.Roles == role.Value);
 
         var total = await query.CountAsync();
 
@@ -51,7 +46,6 @@ public class EmployeesController : ControllerBase
         return Ok(new PagedResult<EmployeeResponseDto>(items, total, page, pageSize));
     }
 
-    /// Merr punonjësin sipas ID
     [HttpGet("{id}")]
     public async Task<ActionResult<EmployeeResponseDto>> GetById(Guid id)
     {
@@ -62,12 +56,34 @@ public class EmployeesController : ControllerBase
             return Forbid();
 
         var employee = await _db.Employees.FindAsync(id);
-        if (employee is null) return NotFound(new { message = "Punonjësi nuk u gjet." });
+        if (employee is null) return NotFound(new { message = "Punonjesi nuk u gjet." });
 
         return Ok(ToDto(employee));
     }
 
-    /// Krijo punonjës të ri 
+    // GET: api/employees/{id}/leave-balance
+    [HttpGet("{id}/leave-balance")]
+    public async Task<IActionResult> GetLeaveBalance(Guid id)
+    {
+        var currentId = GetCurrentEmployeeId();
+        var currentRole = GetCurrentRole();
+
+        if (currentRole == "Employee" && currentId != id)
+            return Forbid();
+
+        var employee = await _db.Employees.FindAsync(id);
+        if (employee is null) return NotFound(new { message = "Punonjesi nuk u gjet." });
+
+        return Ok(new LeaveBalanceDto
+        {
+            EmployeeId = employee.Id,
+            EmployeeName = $"{employee.FirstName} {employee.LastName}",
+            TotalDaysPerYear = employee.VacationDaysPerYear,
+            UsedDays = employee.UsedVacationDays,
+            RemainingDays = employee.VacationDaysPerYear - employee.UsedVacationDays
+        });
+    }
+
     [HttpPost]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<EmployeeResponseDto>> Create([FromBody] EmployeeCreateDto dto)
@@ -85,7 +101,9 @@ public class EmployeesController : ControllerBase
             Salary = dto.Salary,
             HireDate = dto.HireDate,
             Roles = dto.Role,
-            ManagerId = dto.ManagerId
+            ManagerId = dto.ManagerId,
+            DepartmentId = dto.DepartmentId,
+            Status = EmployeeStatus.Active
         };
 
         _db.Employees.Add(employee);
@@ -94,13 +112,12 @@ public class EmployeesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = employee.Id }, ToDto(employee));
     }
 
-    /// Përditëso punonjësin (Admin)
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<EmployeeResponseDto>> Update(Guid id, [FromBody] UpdateEmployeeDto dto)
     {
         var employee = await _db.Employees.FindAsync(id);
-        if (employee is null) return NotFound(new { message = "Punonjësi nuk u gjet." });
+        if (employee is null) return NotFound(new { message = "Punonjesi nuk u gjet." });
 
         if (dto.FirstName is not null) employee.FirstName = dto.FirstName;
         if (dto.LastName is not null) employee.LastName = dto.LastName;
@@ -109,22 +126,31 @@ public class EmployeesController : ControllerBase
         if (dto.Status.HasValue) employee.Status = dto.Status.Value;
         if (dto.Roles.HasValue) employee.Roles = dto.Roles.Value;
         if (dto.ManagerId.HasValue) employee.ManagerId = dto.ManagerId.Value;
+        if (dto.DepartmentId.HasValue) employee.DepartmentId = dto.DepartmentId.Value;
 
         await _db.SaveChangesAsync();
         return Ok(ToDto(employee));
     }
 
-    /// Deaktivizo punonjësin 
+    // DELETE - Soft Delete
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Deactivate(Guid id)
+    public async Task<IActionResult> Delete(Guid id)
     {
         var employee = await _db.Employees.FindAsync(id);
-        if (employee is null) return NotFound(new { message = "Punonjësi nuk u gjet." });
+        if (employee is null) return NotFound(new { message = "Punonjesi nuk u gjet." });
 
+        employee.IsDeleted = true;
+        employee.DeletedAt = DateTime.UtcNow;
         employee.Status = EmployeeStatus.Inactive;
-        await _db.SaveChangesAsync();
 
+
+        //  departmenti  mbetet pa manager deri ne caktimin e nje te riu
+        var dept = await _db.Departments.FirstOrDefaultAsync(d => d.ManagerId == id);
+        if (dept != null)
+            dept.ManagerId = null;
+
+        await _db.SaveChangesAsync();
         return NoContent();
     }
 
@@ -145,6 +171,7 @@ public class EmployeesController : ControllerBase
         HireDate = e.HireDate,
         Status = e.Status,
         Role = e.Roles,
-        ManagerId = e.ManagerId
+        ManagerId = e.ManagerId,
+        DepartmentId = e.DepartmentId
     };
 }

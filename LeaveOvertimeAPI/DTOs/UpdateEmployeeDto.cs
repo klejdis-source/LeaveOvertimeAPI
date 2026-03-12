@@ -9,6 +9,7 @@
         public EmployeeStatus? Status { get; set; }
         public Roles? Roles { get; set; }
         public Guid? ManagerId { get; set; }
+        public Guid? DepartmentId { get; set; }
 
 
     }

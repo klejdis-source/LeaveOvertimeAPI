@@ -19,8 +19,19 @@ namespace LeaveOvertimeAPI.Models
         public Guid? ManagerId { get; set; } 
         public Employee Manager { get; set; }
 
-        public ICollection<LeaveRequest> LeaveRequest { get; set; } 
-        public ICollection<Overtime> Overtime { get; set; }
+        public Guid? DepartmentId { get; set; }
+        public Department? Department { get; set; }
+
+        public int VacationDaysPerYear { get; set; } = 20;
+        public int UsedVacationDays { get; set; } = 0;
+
+        public bool IsDeleted { get; set; } = false;
+        public DateTime DeletedAt { get; set; }
+
+
+        public ICollection<Employee> Subordinates { get; set; } = new List<Employee>();
+        public ICollection<LeaveRequest> LeaveRequest { get; set; } = new List<LeaveRequest>();
+        public ICollection<Overtime> Overtime { get; set; } = new List<Overtime>();
 
 
     }

@@ -16,6 +16,8 @@
             public DateTime HireDate { get; set; }
             
             public Roles? Role { get; set; }
+            public EmployeeStatus Status { get; set; } = EmployeeStatus.Active;
             public Guid? ManagerId { get; set; }
+            public Guid? DepartmentId { get; set; }
     }
 }

@@ -16,6 +16,10 @@ namespace LeaveOvertimeAPI.Models
         public int TotalDays { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public virtual Employee Employee { get; set; }
+
+        // Soft Delete
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }   
     }
 }
 

@@ -24,5 +24,6 @@ namespace LeaveOvertimeAPI.DTOs
         public Roles? Role { get; set; } 
 
         public Guid? ManagerId { get; set; } 
+        public Guid? DepartmentId { get; set; }
     }
 }

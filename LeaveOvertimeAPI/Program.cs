@@ -1,21 +1,17 @@
 using FluentValidation.AspNetCore;
 using LeaveOvertimeAPI.Services;
 using LeaveOvertimeAPI.Data;
-using LeaveOvertimeAPI.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.Text;
-
 var builder = WebApplication.CreateBuilder(args);
-
 // Konfigurimi i Database (SQL Server)
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnection")));
-
-// Konfigurimi i Autentikimit JWT
+// Konfigurimi i Autentifikimit JWT
 var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"] ?? "Celesi_Sekret_Shume_I_Sigurt_123");
 builder.Services.AddAuthentication(options =>
 {
@@ -34,7 +30,6 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = builder.Configuration["Jwt:Audience"]
     };
 });
-
 //  Konfigurimi i Swagger me Suport për JWT 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -56,29 +51,26 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
-
-//  Regjistrimi i Background Service (Bonus)
+//  Regjistrimi i Background Service 
 builder.Services.AddHostedService<LeaveStatusService>();
-
+builder.Services.AddScoped<IEmailService, EmailService>();
 //  Regjistrimi i Controllers 
-builder.Services.AddControllers();
-                
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler =
+            System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 
 var app = builder.Build();
-
 //  Aktivizimi i Swagger 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Leave Overtime API v1"));
 }
-
 app.UseHttpsRedirection();
-
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
