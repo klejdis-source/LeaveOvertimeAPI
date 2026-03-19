@@ -1,6 +1,7 @@
 ﻿using LeaveOvertimeAPI.DTOs;
 using LeaveOvertimeAPI.Data;
 using LeaveOvertimeAPI.Models;
+using LeaveOvertimeAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,13 +15,14 @@ namespace LeaveOvertimeManagement.API.Controllers;
 public class ReportsController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly ReportExportService _reportExport;
 
-    public ReportsController(AppDbContext db)
+    public ReportsController(AppDbContext db, ReportExportService reportExport)
     {
         _db = db;
+        _reportExport = reportExport;
     }
 
-    // Total ditë leje për çdo punonjës, me filtrim sipas periudhës.
     [HttpGet("leave-summary")]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<LeaveSummaryDto>>> GetLeaveSummary(
@@ -51,14 +53,12 @@ public class ReportsController : ControllerBase
         return Ok(result);
     }
 
-    // Total orë shtesë të aprovuara - automatikisht muaji dhe viti aktual.
     [HttpGet("overtime-summary")]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<OvertimeSummaryDto>>> GetOvertimeSummary(
         [FromQuery] int? month = null,
         [FromQuery] int? year = null)
     {
-        // Nëse nuk jepet muaji/viti, merr automatikisht muajin dhe vitin aktual
         var targetMonth = month ?? DateTime.UtcNow.Month;
         var targetYear = year ?? DateTime.UtcNow.Year;
 
@@ -67,12 +67,7 @@ public class ReportsController : ControllerBase
             .Where(o => o.Status == "Approved" &&
                         o.Date.Month == targetMonth &&
                         o.Date.Year == targetYear)
-            .GroupBy(o => new
-            {
-                o.EmployeeId,
-                o.Employee.FirstName,
-                o.Employee.LastName
-            })
+            .GroupBy(o => new { o.EmployeeId, o.Employee.FirstName, o.Employee.LastName })
             .ToListAsync();
 
         var result = grouped.Select(g => new OvertimeSummaryDto
@@ -84,15 +79,9 @@ public class ReportsController : ControllerBase
             TotalHours = (double)g.Sum(o => o.HoursWorked)
         }).ToList();
 
-        return Ok(new
-        {
-            Month = targetMonth,
-            Year = targetYear,
-            Summary = result
-        });
+        return Ok(new { Month = targetMonth, Year = targetYear, Summary = result });
     }
 
-    // Lista e të gjitha kërkesave Pending (leje + orë shtesë).
     [HttpGet("pending")]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult> GetPendingRequests()
@@ -131,7 +120,6 @@ public class ReportsController : ControllerBase
         });
     }
 
-    // Lejet dhe orët shtesë të stafit që menaxhon, me filtrim sipas muajit/vitit.
     [HttpGet("my-team")]
     [Authorize(Roles = "Manager")]
     public async Task<ActionResult> GetMyTeamReport(
@@ -168,8 +156,7 @@ public class ReportsController : ControllerBase
         }
 
         var leaves = await leavesQuery
-            .Select(l => new
-            {
+            .Select(l => new {
                 l.Id,
                 EmployeeName = $"{l.Employee.FirstName} {l.Employee.LastName}",
                 l.Type,
@@ -177,20 +164,32 @@ public class ReportsController : ControllerBase
                 l.EndDate,
                 l.TotalDays,
                 l.Status
-            })
-            .ToListAsync();
+            }).ToListAsync();
 
         var overtime = await overtimeQuery
-            .Select(o => new
-            {
+            .Select(o => new {
                 o.Id,
                 EmployeeName = $"{o.Employee.FirstName} {o.Employee.LastName}",
                 o.Date,
                 o.HoursWorked,
                 o.Status
-            })
-            .ToListAsync();
+            }).ToListAsync();
 
         return Ok(new { Leaves = leaves, Overtime = overtime });
+    }
+
+    // GET: api/reports/overtime/monthly/export
+    [HttpGet("overtime/monthly/export")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> ExportMonthlyOvertime(
+        [FromQuery] DateTime from,
+        [FromQuery] DateTime to)
+    {
+        var currentUserId = Guid.Parse(User.FindFirstValue("employeeId")!);
+        var currentRole = User.FindFirstValue(ClaimTypes.Role);
+
+        var result = await _reportExport.ExportMonthlyOvertimeAsync(from, to, currentUserId, currentRole);
+
+        return File(result.Content, result.ContentType, result.FileName);
     }
 }

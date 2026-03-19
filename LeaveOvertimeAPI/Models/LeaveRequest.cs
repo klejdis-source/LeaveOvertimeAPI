@@ -25,7 +25,7 @@ namespace LeaveOvertimeAPI.Models
 
 public enum LeaveType
 {
-    Vacation,
-    Sick,
-    Unpaid,
+    Vacation = 1,
+    Sick = 2,
+    Unpaid = 3,
 }

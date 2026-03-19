@@ -36,7 +36,8 @@ namespace LeaveOvertimeAPI.Controllers
                 LastName = dto.LastName,
                 Email = dto.Email,
                 Password = dto.Password,
-                Roles = dto.Roles
+                Roles = dto.Roles,
+                Position = dto.Position
             };
 
             _context.Employees.Add(employee);
@@ -45,7 +46,7 @@ namespace LeaveOvertimeAPI.Controllers
             return Ok(new
             {
                 message = "Përdoruesi u regjistrua me sukses.",
-                user = new { employee.FirstName, employee.LastName, employee.Email, employee.Roles }
+                user = new { employee.FirstName, employee.LastName, employee.Email, employee.Roles, employee.Position }
             });
         }
 
