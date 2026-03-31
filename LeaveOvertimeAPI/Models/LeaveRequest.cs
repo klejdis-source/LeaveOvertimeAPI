@@ -5,9 +5,9 @@ namespace LeaveOvertimeAPI.Models
     public class LeaveRequest
     {
         //te detyrueshme id ,reason, type, status 
-        public Guid? Id { get; set; }
+        public Guid Id { get; set; }
         public Guid EmployeeId { get; set; }
-        public string? Type { get; set; } // Vacation , sick , unpaid
+        public LeaveType? Type { get; set; } // Vacation , sick , unpaid //update ne db
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public string? Reason { get; set; }
@@ -15,7 +15,7 @@ namespace LeaveOvertimeAPI.Models
         public Guid? ApprovedBy { get; set; }
         public int TotalDays { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public virtual Employee Employee { get; set; }
+        public Employee Employee { get; set; }
 
         // Soft Delete
         public bool IsDeleted { get; set; } = false;
@@ -25,7 +25,7 @@ namespace LeaveOvertimeAPI.Models
 
 public enum LeaveType
 {
-    Vacation = 1,
-    Sick = 2,
-    Unpaid = 3,
+   Vacation = 0,
+    Sick = 1,
+    Unpaid = 2
 }

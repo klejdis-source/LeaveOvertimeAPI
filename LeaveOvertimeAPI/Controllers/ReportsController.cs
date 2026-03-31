@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
-namespace LeaveOvertimeManagement.API.Controllers;
+namespace LeaveOvertimeAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -22,7 +22,7 @@ public class ReportsController : ControllerBase
         _db = db;
         _reportExport = reportExport;
     }
-
+    
     [HttpGet("leave-summary")]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<LeaveSummaryDto>>> GetLeaveSummary(
@@ -38,16 +38,16 @@ public class ReportsController : ControllerBase
         if (to.HasValue) query = query.Where(l => l.EndDate <= to.Value);
 
         var grouped = await query
-            .GroupBy(l => new { l.EmployeeId, l.Employee.FirstName, l.Employee.LastName })
+            .GroupBy(l => new { l.EmployeeId, FirstName = l.Employee.FirstName, LastName = l.Employee.LastName })
             .ToListAsync();
 
         var result = grouped.Select(g => new LeaveSummaryDto
         {
-            EmployeeId = g.Key.EmployeeId,
+            EmployeeId =(Guid) g.Key.EmployeeId,
             EmployeeName = $"{g.Key.FirstName} {g.Key.LastName}",
-            TotalVacationDays = g.Where(l => l.Type == "Vacation").Sum(l => l.TotalDays),
-            TotalSickDays = g.Where(l => l.Type == "Sick").Sum(l => l.TotalDays),
-            TotalUnpaidDays = g.Where(l => l.Type == "Unpaid").Sum(l => l.TotalDays)
+            TotalVacationDays = g.Where(l => l.Type == LeaveType.Vacation).Sum(l => l.TotalDays),
+            TotalSickDays = g.Where(l => l.Type == LeaveType.Sick).Sum(l => l.TotalDays),
+            TotalUnpaidDays = g.Where(l => l.Type == LeaveType.Unpaid).Sum(l => l.TotalDays)
         }).ToList();
 
         return Ok(result);
@@ -92,7 +92,7 @@ public class ReportsController : ControllerBase
             .Select(l => new PendingLeaveDto(
                 l.Id,
                 $"{l.Employee.FirstName} {l.Employee.LastName}",
-                l.Type,
+                l.Type.Value,
                 l.StartDate,
                 l.EndDate,
                 l.TotalDays,

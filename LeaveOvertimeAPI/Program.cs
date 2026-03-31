@@ -62,6 +62,7 @@ builder.Services.AddSwaggerGen(c =>
 // Regjistrimi i Background Service
 builder.Services.AddHostedService<LeaveStatusService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<ReportExportService>();
 
 // Quartz Cron Jobs

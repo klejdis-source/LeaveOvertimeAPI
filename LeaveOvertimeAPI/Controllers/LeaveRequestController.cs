@@ -120,7 +120,7 @@ namespace LeaveOvertimeAPI.Controllers
 
             int totalDays = (dto.EndDate - dto.StartDate).Days + 1;
 
-            if (dto.Type == "Vacation")
+            if (dto.Type == LeaveType.Vacation)
             {
                 var emp = await _db.Employees.FindAsync(currentId);
                 if (emp != null)
@@ -160,7 +160,7 @@ namespace LeaveOvertimeAPI.Controllers
             var manager = employee?.ManagerId.HasValue == true
                 ? await _db.Employees.FindAsync(employee.ManagerId.Value)
                 : null;
-            var managerEmail = manager?.Email ?? "patrick@gmail.com";
+            var managerEmail = manager?.Email ?? "manager@company.com";
             await _email.SendAsync(managerEmail, "Kerkese e re per leje",
                 $"{employee?.FirstName} {employee?.LastName} ka bere kerkese per leje. Eshte ne pritje te aprovimit.");
 
@@ -198,7 +198,7 @@ namespace LeaveOvertimeAPI.Controllers
             if (leave == null) return NotFound(new { message = "Kerkesa nuk u gjet." });
             if (leave.Status != "Pending") return BadRequest(new { message = "Vetem kerkesat Pending mund te aprovohen/refuzohen." });
 
-            if (dto.Approve && leave.Type == "Vacation")
+            if (dto.Approve && leave.Type == LeaveType.Vacation)
             {
                 var emp = await _db.Employees.FindAsync(leave.EmployeeId);
                 if (emp != null)

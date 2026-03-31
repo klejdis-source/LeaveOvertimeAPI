@@ -15,6 +15,7 @@ namespace LeaveOvertimeAPI.Data
         public DbSet<Overtime> Overtimes { get; set; }
         public DbSet<Department> Departments { get; set; }
         public DbSet<Auditlog> Auditlogs { get; set; }
+        public DbSet<EmployeeDocument> EmployeeDocuments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -70,6 +71,14 @@ namespace LeaveOvertimeAPI.Data
             modelBuilder.Entity<LeaveRequest>().HasQueryFilter(l => !l.IsDeleted);
             modelBuilder.Entity<Overtime>().HasQueryFilter(o => !o.IsDeleted);
             modelBuilder.Entity<Department>().HasQueryFilter(d => !d.IsDeleted);
+            modelBuilder.Entity<EmployeeDocument>().HasQueryFilter(d => !d.IsDeleted);
+
+            //EmployeeDocument -> Employee
+            modelBuilder.Entity<EmployeeDocument>()
+                .HasOne(d => d.Employee)
+                .WithMany()
+                .HasForeignKey(d => d.EmployeeId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

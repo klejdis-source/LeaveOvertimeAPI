@@ -5,7 +5,6 @@ namespace LeaveOvertimeAPI.DTOs
     public class LeaveRequestCreateDto
     {
             public string? Type { get; set; } // Vacation, Sick, Unpaid 
-           // public string Email { get; set; } = string.Empty;
 
             public DateTime? StartDate { get; set; }
             

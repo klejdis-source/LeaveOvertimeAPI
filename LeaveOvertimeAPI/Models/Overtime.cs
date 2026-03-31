@@ -8,14 +8,14 @@ namespace LeaveOvertimeAPI.Models
         public Guid Id { get; set; }
 
         public Guid EmployeeId { get; set; }
-        public Employee Employee { get; set; }
+        public Employee? Employee { get; set; }
 
         public DateTime Date { get; set; }
         public decimal HoursWorked { get; set; }
         [Range(1, 12, ErrorMessage = "Maksimumi 12 orë shtesë në ditë")]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
-        public string Status { get; set; } // Pending, Approved, Rejected
+        public string? Status { get; set; } // Pending, Approved, Rejected
 
         public Guid? ApprovedBy { get; set; }
 

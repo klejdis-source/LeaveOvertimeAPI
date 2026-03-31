@@ -10,7 +10,7 @@ namespace LeaveOvertimeAPI.Validation
             RuleFor(x => x.Type)
                 .NotEmpty()
                 .WithMessage("Tipi i lejes është i detyrueshëm.")
-                .Must(t => t == "Vacation" || t == "Sick" || t == "Unpaid")
+                .Must(t => t == LeaveType.Vacation || t == LeaveType.Sick || t == LeaveType.Unpaid)
                 .WithMessage("Tipi duhet të jetë: Vacation, Sick ose Unpaid.");
 
             RuleFor(x => x.StartDate)

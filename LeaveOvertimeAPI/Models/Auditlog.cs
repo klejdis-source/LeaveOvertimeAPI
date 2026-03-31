@@ -10,6 +10,6 @@ namespace LeaveOvertimeAPI.Models
         public string? EntityName { get; set; }
         public string? EntityId { get; set; } 
         public DateTime Date { get; set; } = DateTime.UtcNow;
-
+        
     }
-}
+} 
